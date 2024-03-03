@@ -19,12 +19,12 @@ useState의 인수로 특정한 값을 넘기는 함수를 인수로 넣어줄 �
 ```jsx
 // 바로 변수를 넣는 방법
 const [count, setCount] = useState(
-    Number.parseInt(window.localStorage.getItem(cacheKey))
+  Number.parseInt(window.localStorage.getItem(cacheKey))
 );
 
 // 함수를 넣는 게으른 초기화 방법
 const [count, setCount] = useState(() =>
-    Number.parseInt(window.localStorage.getItem(cacheKey))
+  Number.parseInt(window.localStorage.getItem(cacheKey))
 );
 ```
 
@@ -115,3 +115,68 @@ useEffect 내부에서만 실행되는 함수라면 외부에 작성하고 내�
 > useEffect 콜백 인수로 비동기 함수를 바로 넣을 수 없을까?
 
 이전 state 기반의 응답이 10초가 걸리고, 이후 바뀐 state 기반의 응답이 1초 뒤에 왔다면 이전 state 기반으로 결과가 나와버리는 불상사가 생길 수 있다. 이러한 문제를 경쟁 상태(race condition)라고 한다.
+
+### useMemo
+
+useMemo는 비용이 큰 연산에 댛나 결과를 저장(메모이제이션)해 두고, 이 저장된 값을 반환하는 훅이다.
+
+최적화를 떠올릴 때 가장 먼저 언급되는 훅이 바로 useMemo다.
+
+useMemo는 렌더링 발생 시 의존성 배열의 값이 변경되지 않았으면 함수를 재실행하지 않고 이전에 기억해 둔 해당 값을 반환하고, 의존성 배열의 값이 변경됐다면 첫 번째 인수의 함수를 실행한 후에 그 값을 반환하고 그 값을 다시 기억한다.
+
+메모이제이션은 단순히 값뿐만 아니라 컴포넌트도 가능하다.
+
+```jsx
+function App() {
+  const [value, setValue] = useState(10);
+
+  // 컴포넌트의 props를 기준으로 컴포넌트 자체를 메모이제이션 했다.
+  const MemoizedComponent = useMemo(
+    () => <ExpensiveComponent value={value} />,
+    [value]
+  );
+}
+```
+
+useMemo로 컴포넌트도 감쌀 수 있다. 하지만 React.memo를 쓰는 것이 더 현명하다.
+
+### useCallback
+
+useCallback은 인수로 넘겨받은 콜백 자체를 기억한다. 특정 함수를 새로 만들지 않고 다시 재사용한다는 의미다.
+
+```jsx
+function App() {
+  const [status1, setStatus1] = useState(10);
+
+  const toggle = useCallback(
+    function toggle1() {
+      setStatus1(!status1);
+    },
+    [status1]
+  );
+}
+```
+
+함수의 재생성을 막아 불필요한 리소스 또는 리렌더링을 방지하고 싶을 때 useCallback을 사용해 볼 수 있다.
+
+예제에선느 기명 함수를 넘겨줬는데 이는 디버깅에 있어 추적하기 용이하게 하기 위함이다. 익명 함수는 함수를 추적하기 어렵기 때문이다.
+
+useCallback은 useMemo를 사용해서 구현할 수 있다.
+
+```jsx
+const handleClick1 = useCallback(() => {
+  // 함수
+}, []);
+
+const handleClick2 = useMemo(() => {
+  return; // 함수
+});
+```
+
+useMemo와 useCallback의 유일한 차이는 메모이제이션을 하는 대상이 변수냐 함수냐일 뿐이다.
+
+useMemo는 값 자체를 메모이제이션하는 용도이기 때문에 반환문으로 함수 선언문을 반환해야 한다.
+
+하지만 혼란을 불러올 수 있으므로 함수를 메모이제이션하는 경우 useCallback을 사용하자.
+
+기억해야 할 사실은 useCallback이나 useMemo는 모두 동일한 역할을 한다.
